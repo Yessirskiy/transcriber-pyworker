@@ -1,6 +1,8 @@
 import itertools
 import json
 import os
+import sys
+import traceback
 import urllib.request
 import uuid
 
@@ -11,6 +13,10 @@ from vastai import (
     LogActionConfig,
     BenchmarkConfig,
 )
+
+WORKER_VERSION = "2026-09-19-a"  # bump on each change you want to verify on an instance
+
+print(f"===== transcriber-pyworker version {WORKER_VERSION} =====", flush=True)
 
 # --- Model server -------------------------------------------------------------
 # `main` (server.py) — the only process supervisor exposes on the host. See
@@ -42,7 +48,9 @@ def request_parser(request: dict) -> dict:
 
 def compute_workload(request: dict) -> float:
     duration = request.get("duration", 0)
-    factor = 2 if (request.get("with_alignment") or request.get("with_diarization")) else 1
+    factor = (
+        2 if (request.get("with_alignment") or request.get("with_diarization")) else 1
+    )
     return duration * factor
 
 
@@ -58,7 +66,9 @@ BENCHMARK_API_URL = "https://transvox.ru/api/v1/benchmarks"
 def _fetch_benchmark_cases() -> list:
     token = os.environ.get("BENCHMARK_TOKEN")
     if not token:
-        raise RuntimeError("BENCHMARK_TOKEN must be set to run the /transcribe benchmark")
+        raise RuntimeError(
+            "BENCHMARK_TOKEN must be set to run the /transcribe benchmark"
+        )
     req = urllib.request.Request(
         BENCHMARK_API_URL, headers={"Authorization": f"Bearer {token}"}
     )
@@ -74,6 +84,15 @@ _benchmark_cases_iter = itertools.cycle(_benchmark_cases)
 
 
 def transcribe_benchmark_generator() -> dict:
+    try:
+        return _build_benchmark_payload()
+    except BaseException:
+        traceback.print_exc()
+        sys.stderr.flush()
+        raise
+
+
+def _build_benchmark_payload() -> dict:
     case = next(_benchmark_cases_iter)
     return {
         "request_id": str(uuid.uuid4()),
@@ -106,7 +125,7 @@ worker_config = WorkerConfig(
             request_parser=request_parser,
             benchmark_config=BenchmarkConfig(
                 generator=transcribe_benchmark_generator,
-                runs=len(_benchmark_cases),
+                runs=1,
                 concurrency=1,
                 do_warmup=False,
             ),
