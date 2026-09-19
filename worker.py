@@ -1,3 +1,4 @@
+import itertools
 import json
 import os
 import urllib.request
@@ -69,7 +70,7 @@ def _fetch_benchmark_cases() -> list:
 
 
 _benchmark_cases = _fetch_benchmark_cases()
-_benchmark_cases_iter = iter(_benchmark_cases)
+_benchmark_cases_iter = itertools.cycle(_benchmark_cases)
 
 
 def transcribe_benchmark_generator() -> dict:
@@ -107,6 +108,7 @@ worker_config = WorkerConfig(
                 generator=transcribe_benchmark_generator,
                 runs=len(_benchmark_cases),
                 concurrency=1,
+                do_warmup=False,
             ),
         ),
     ],
