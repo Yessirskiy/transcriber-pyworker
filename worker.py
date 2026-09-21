@@ -14,7 +14,7 @@ from vastai import (
     BenchmarkConfig,
 )
 
-WORKER_VERSION = "2026-09-19-a"  # bump on each change you want to verify on an instance
+WORKER_VERSION = "2026-09-20-a"  # bump on each change you want to verify on an instance
 
 print(f"===== transcriber-pyworker version {WORKER_VERSION} =====", flush=True)
 
@@ -106,6 +106,7 @@ def _build_benchmark_payload() -> dict:
         "num_speakers": None,
         "min_speakers": None,
         "max_speakers": None,
+        "is_benchmark": True,
     }
 
 
